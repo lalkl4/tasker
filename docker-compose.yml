@@ -1,13 +1,13 @@
 services:
-  taskflow:
+  tasker:
     build: .
-    image: taskflow:local
-    container_name: taskflow
+    image: lalkl4/tasker:latest
+    container_name: tasker
     ports:
       - "8000:8000"
     volumes:
-      - taskflow-data:/app/data
+      - tasker-data:/app/data
     restart: unless-stopped
 
 volumes:
-  taskflow-data:
+  tasker-data:

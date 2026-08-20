@@ -26,15 +26,15 @@ docker compose up --build
 Или напрямую из готового образа:
 
 ```bash
-docker run -d -p 8000:8000 -v taskflow-data:/app/data --name tasker <docker-hub-логин>/tasker:latest
+docker run -d -p 8000:8000 -v tasker-data:/app/data --name tasker lalkl4/tasker:latest
 ```
 
 - Приложение: http://localhost:8000
 - Swagger-документация API: http://localhost:8000/docs
 
-База лежит в томе `taskflow-data`, смонтированном в `/app/data`, и переживает
+База лежит в томе `tasker-data`, смонтированном в `/app/data`, и переживает
 пересоздание контейнера. Чтобы начать с чистого листа — удалите том:
-`docker volume rm taskflow-data`.
+`docker volume rm tasker-data`.
 
 ## Запуск без Docker
 

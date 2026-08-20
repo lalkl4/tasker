@@ -3,6 +3,9 @@
 Трекер задач с проектами и доской из трёх колонок. Пет-проект: фронтенд,
 бэкенд и база SQLite в одном контейнере.
 
+Готовый образ: [`lalkl4/tasker`](https://hub.docker.com/r/lalkl4/tasker) —
+публичный, авторизация для загрузки не нужна.
+
 ```
 Браузер ──HTTP──▶ FastAPI (backend/main.py) ──sqlite3──▶ data/app.db
    ▲                       │
@@ -19,14 +22,18 @@
 
 ## Запуск в Docker
 
-```bash
-docker compose up --build
-```
-
-Или напрямую из готового образа:
+Одной командой, без клонирования репозитория:
 
 ```bash
 docker run -d -p 8000:8000 -v tasker-data:/app/data --name tasker lalkl4/tasker:latest
+```
+
+Доступные теги — `latest` и `1.0.0`.
+
+Либо сборка из исходников:
+
+```bash
+docker compose up --build
 ```
 
 - Приложение: http://localhost:8000

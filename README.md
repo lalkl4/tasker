@@ -26,7 +26,7 @@ docker compose up --build
 Или напрямую из готового образа:
 
 ```bash
-docker run -d -p 8000:8000 -v taskflow-data:/app/data --name taskflow DOCKERHUB_USER/taskflow:latest
+docker run -d -p 8000:8000 -v taskflow-data:/app/data --name tasker <docker-hub-логин>/tasker:latest
 ```
 
 - Приложение: http://localhost:8000

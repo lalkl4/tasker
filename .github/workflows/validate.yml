@@ -1,0 +1,85 @@
+name: Проверка конфигурации
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  compose:
+    name: compose-файлы валидны
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Подготовить .env
+        # Значения фиктивные: проверяется синтаксис и подстановка переменных,
+        # а не работоспособность стека
+        run: |
+          cp .env.example .env
+          sed -i 's/^TASKER_DB_PASSWORD=.*/TASKER_DB_PASSWORD=ci-proverka/' .env
+
+      - name: Базовый стек
+        run: docker compose config --quiet && echo "compose.yaml корректен"
+
+      - name: Оверлей разработки
+        # Он ссылается на соседние репозитории, которых в CI нет,
+        # поэтому проверяем только разбор файла
+        run: |
+          docker compose -f compose.yaml -f compose.dev.yaml config --quiet \
+            && echo "compose.dev.yaml корректен"
+
+      - name: Обязательные сервисы на месте
+        run: |
+          services=$(docker compose config --services | sort | tr '\n' ' ')
+          echo "сервисы: $services"
+          for s in api caddy db migrate web; do
+            echo "$services" | grep -qw "$s" || { echo "нет сервиса $s"; exit 1; }
+          done
+
+      - name: Инструменты спрятаны за профилем
+        # backup и restore не должны подниматься вместе со стеком
+        run: |
+          if docker compose config --services | grep -qw backup; then
+            echo "backup виден без профиля — он поднимется вместе со стеком"
+            exit 1
+          fi
+          docker compose --profile tools config --services | grep -qw backup \
+            && echo "backup доступен по профилю tools"
+
+  caddy:
+    name: Caddyfile валиден
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Проверить синтаксис
+        run: |
+          docker run --rm -e TASKER_DOMAIN=example.test \
+            -v "$PWD/caddy/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
+
+  scripts:
+    name: Скрипты без ошибок
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          shellcheck --shell=sh scripts/*.sh
+
+  makefile:
+    name: Makefile разбирается
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Цели на месте
+        run: |
+          make help
+          for target in up down update rollback backup restore dev; do
+            make -n "$target" VERSION=0.0.0 >/dev/null 2>&1 \
+              || grep -q "^$target:" Makefile \
+              || { echo "нет цели $target"; exit 1; }
+          done
+          echo "все цели объявлены"

@@ -1,0 +1,114 @@
+# Базовый стек Tasker: то, что публикуется для самохостеров.
+#
+# Версия задаётся одной переменной TASKER_VERSION в .env — она же и есть
+# ответ на вопрос «что сейчас развёрнуто». Откат это её правка и `up -d`.
+
+name: tasker
+
+x-api-env: &api-env
+  TASKER_DATABASE_URL: postgresql+psycopg://tasker:${TASKER_DB_PASSWORD:?задайте пароль в .env}@db:5432/tasker
+  TASKER_JWT_SECRET: ${TASKER_JWT_SECRET:-}
+  TASKER_CORS_ORIGINS: ${TASKER_CORS_ORIGINS:-*}
+  TASKER_ALLOW_REGISTRATION: ${TASKER_ALLOW_REGISTRATION:-true}
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "${TASKER_HTTP_PORT:-80}:80"
+      - "${TASKER_HTTPS_PORT:-443}:443"
+    environment:
+      # localhost — Caddy выпишет сертификат своим внутренним УЦ.
+      # Настоящий домен — возьмёт сертификат у Let's Encrypt автоматически.
+      TASKER_DOMAIN: ${TASKER_DOMAIN:-localhost}
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    image: ghcr.io/lalkl4/tasker-web:${TASKER_VERSION:?задайте версию в .env}
+    environment:
+      # Пусто — значит тот же источник: Caddy отдаёт веб и API под одним
+      # доменом, поэтому запросы идут относительными путями и CORS не нужен
+      TASKER_API_BASE: ""
+    restart: unless-stopped
+
+  api:
+    image: ghcr.io/lalkl4/tasker-api:${TASKER_VERSION}
+    environment: *api-env
+    depends_on:
+      db:
+        condition: service_healthy
+      # Приложение не поднимется, пока миграции не отработают успешно
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  migrate:
+    image: ghcr.io/lalkl4/tasker-api:${TASKER_VERSION}
+    command: python -m alembic upgrade head
+    environment: *api-env
+    depends_on:
+      db:
+        condition: service_healthy
+    # Разовая задача, а не служба: перезапускать её нельзя, иначе compose
+    # будет считать успешное завершение падением и крутить её по кругу
+    restart: "no"
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: tasker
+      POSTGRES_DB: tasker
+      POSTGRES_PASSWORD: ${TASKER_DB_PASSWORD:?задайте пароль в .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tasker -d tasker"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  # Не служба, а инструмент: поднимается только по требованию,
+  # `docker compose run --rm backup`
+  backup:
+    image: postgres:17-alpine
+    profiles: ["tools"]
+    environment:
+      PGPASSWORD: ${TASKER_DB_PASSWORD:?}
+      KEEP_BACKUPS: ${TASKER_KEEP_BACKUPS:-14}
+    volumes:
+      - ./scripts:/scripts:ro
+      - backups:/backups
+    entrypoint: ["/bin/sh", "/scripts/backup.sh"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  restore:
+    image: postgres:17-alpine
+    profiles: ["tools"]
+    environment:
+      PGPASSWORD: ${TASKER_DB_PASSWORD:?}
+      BACKUP_FILE: ${BACKUP_FILE:-}
+    volumes:
+      - ./scripts:/scripts:ro
+      - backups:/backups
+    entrypoint: ["/bin/sh", "/scripts/restore.sh"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db-data:
+  backups:
+  caddy-data:
+  caddy-config:

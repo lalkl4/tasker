@@ -1,8 +1,0 @@
-fastapi==0.141.1
-uvicorn[standard]==0.52.4
-sqlalchemy==2.0.44
-psycopg[binary]==3.2.12
-pydantic[email]==2.13.4
-pydantic-settings==2.13.0
-argon2-cffi==25.1.0
-pyjwt==2.12.1

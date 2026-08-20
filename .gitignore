@@ -1,6 +1,9 @@
-data/*.db
-__pycache__/
-*.pyc
-.venv/
-
+# Настройки конкретного развёртывания — у каждого свои
 .env
+.env.previous
+.env.rolled-back-from
+*.bak
+
+# Локальные дампы, если кто-то положит их рядом
+*.sql
+*.sql.gz

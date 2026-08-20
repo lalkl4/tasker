@@ -1,0 +1,48 @@
+# Единая точка входа. Веб и API живут под одним доменом — поэтому клиент
+# ходит относительными путями, и CORS в браузере не участвует вовсе.
+#
+# TASKER_DOMAIN=localhost — Caddy подпишет сертификат внутренним УЦ.
+# TASKER_DOMAIN=tasker.example.com — сам получит сертификат Let's Encrypt.
+
+{$TASKER_DOMAIN} {
+	encode zstd gzip
+
+	# Всё, что относится к серверу, уходит в api
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+	handle /.well-known/tasker {
+		reverse_proxy api:8000
+	}
+	handle /docs* {
+		reverse_proxy api:8000
+	}
+	handle /openapi.json {
+		reverse_proxy api:8000
+	}
+
+	# Пробы наружу не отдаём: снаружи проверяют /api/v1/... или сам сайт,
+	# а healthz и readyz нужны оркестратору внутри сети
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	# Остальное — статика
+	handle {
+		reverse_proxy web:8080
+	}
+
+	header {
+		# Браузер не должен угадывать типы содержимого
+		X-Content-Type-Options nosniff
+		# Страницу нельзя встроить во фрейм на чужом сайте
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

@@ -1,0 +1,5 @@
+# В контейнере файлы читает Linux — держим LF независимо от платформы разработчика
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.db binary

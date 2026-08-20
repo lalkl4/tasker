@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TaskFlow</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>%E2%9C%93</text></svg>">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo">✓</span> TaskFlow</div>
+    <input id="search" class="search" type="search" placeholder="Поиск по задачам…" autocomplete="off">
+    <a class="docs-link" href="/docs" target="_blank" rel="noopener">API&nbsp;docs</a>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <h2 class="side-title">Проекты</h2>
+      <ul id="projects" class="projects"></ul>
+
+      <form id="project-form" class="project-form">
+        <input id="project-name" type="text" placeholder="Новый проект" maxlength="60" required>
+        <input id="project-color" type="color" value="#6366f1" title="Цвет проекта">
+        <button type="submit" title="Добавить проект">+</button>
+      </form>
+    </aside>
+
+    <section class="content">
+      <div id="stats" class="stats"></div>
+
+      <form id="task-form" class="task-form">
+        <input id="task-title" type="text" placeholder="Что нужно сделать?" maxlength="200" required>
+        <select id="task-priority" title="Приоритет">
+          <option value="3">Высокий</option>
+          <option value="2" selected>Средний</option>
+          <option value="1">Низкий</option>
+        </select>
+        <input id="task-due" type="date" title="Срок">
+        <button type="submit">Добавить</button>
+      </form>
+
+      <div class="board">
+        <div class="column" data-status="todo">
+          <h3>К выполнению <span class="count" id="count-todo">0</span></h3>
+          <div class="cards" id="col-todo"></div>
+        </div>
+        <div class="column" data-status="doing">
+          <h3>В работе <span class="count" id="count-doing">0</span></h3>
+          <div class="cards" id="col-doing"></div>
+        </div>
+        <div class="column" data-status="done">
+          <h3>Готово <span class="count" id="count-done">0</span></h3>
+          <div class="cards" id="col-done"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

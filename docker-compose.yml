@@ -1,0 +1,13 @@
+services:
+  taskflow:
+    build: .
+    image: taskflow:local
+    container_name: taskflow
+    ports:
+      - "8000:8000"
+    volumes:
+      - taskflow-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  taskflow-data:

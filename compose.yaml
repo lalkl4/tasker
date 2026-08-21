@@ -33,7 +33,7 @@ services:
     restart: unless-stopped
 
   web:
-    image: ghcr.io/lalkl4/tasker-web:${TASKER_VERSION:?задайте версию в .env}
+    image: ghcr.io/lalkl4/tasker-web:${TASKER_WEB_VERSION:-${TASKER_VERSION:?задайте версию в .env}}
     environment:
       # Пусто — значит тот же источник: Caddy отдаёт веб и API под одним
       # доменом, поэтому запросы идут относительными путями и CORS не нужен
@@ -41,7 +41,7 @@ services:
     restart: unless-stopped
 
   api:
-    image: ghcr.io/lalkl4/tasker-api:${TASKER_VERSION}
+    image: ghcr.io/lalkl4/tasker-api:${TASKER_API_VERSION:-${TASKER_VERSION}}
     environment: *api-env
     depends_on:
       db:
@@ -52,7 +52,8 @@ services:
     restart: unless-stopped
 
   migrate:
-    image: ghcr.io/lalkl4/tasker-api:${TASKER_VERSION}
+    # Тот же образ, что у api, иначе миграции и код разъедутся
+    image: ghcr.io/lalkl4/tasker-api:${TASKER_API_VERSION:-${TASKER_VERSION}}
     command: python -m alembic upgrade head
     environment: *api-env
     depends_on:

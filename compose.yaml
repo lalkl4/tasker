@@ -88,6 +88,9 @@ services:
     volumes:
       - ./scripts:/scripts:ro
       - backups:/backups
+      # Сюда кладётся метрика о свежести дампа; её забирает node-exporter,
+      # если поднята наблюдаемость. Без неё том просто не используется.
+      - metrics-textfile:/textfile
     entrypoint: ["/bin/sh", "/scripts/backup.sh"]
     depends_on:
       db:
@@ -112,3 +115,4 @@ volumes:
   backups:
   caddy-data:
   caddy-config:
+  metrics-textfile:

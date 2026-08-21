@@ -1,0 +1,128 @@
+# Наблюдаемость. Накладывается поверх основного стека:
+#   docker compose -f compose.yaml -f compose.observability.yaml up -d
+# или `make obs-up`.
+#
+# Интерфейсы Prometheus и Grafana привязаны к 127.0.0.1 намеренно: наружу
+# они не выставляются. Смотреть через ssh-туннель:
+#   ssh -L 3000:localhost:3000 -L 9090:localhost:9090 user@server
+# Так не нужен ни ещё один поддомен, ни ещё один пароль в интернете.
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.7.3
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      # Метрики за месяц: дольше хранить на одном сервере смысла мало,
+      # а диск они едят ощутимо
+      - --storage.tsdb.retention.time=30d
+      - --web.enable-lifecycle
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:12.3.1
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?задайте пароль Grafana в .env}
+      # Регистрация и анонимный доступ выключены: интерфейс хоть и за
+      # туннелем, но пусть требует вход
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - prometheus
+      - loki
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.5.10
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./observability/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki-data:/loki
+    restart: unless-stopped
+
+  alloy:
+    image: grafana/alloy:v1.13.1
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    volumes:
+      - ./observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      # ВНИМАНИЕ: доступ к сокету docker означает полный контроль над
+      # docker на этом хосте. Флаг :ro этого не меняет — он ограничивает
+      # запись в файл сокета, а не команды через него. Это осознанный
+      # размен: иначе логи контейнеров не собрать без установки плагина
+      # на хост. Не запускайте здесь чужие образы.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloy-data:/var/lib/alloy/data
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.55.1
+    command:
+      # Отключаем сборщики, которые нам не нужны: без них cadvisor
+      # заметно меньше нагружает процессор
+      - --docker_only=true
+      - --housekeeping_interval=15s
+      - --disable_metrics=percpu,sched,tcp,udp,advtcp,process,hugetlb,referenced_memory,cpu_topology,resctrl
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    privileged: true
+    restart: unless-stopped
+
+  node-exporter:
+    image: prom/node-exporter:v1.10.2
+    command:
+      - --path.rootfs=/host
+      # Текстовый сборщик: подбирает файлы .prom, которые кладут туда
+      # сторонние скрипты. Так метрика о свежести дампа попадает
+      # в Prometheus, не требуя отдельного сервиса.
+      - --collector.textfile.directory=/textfile
+    volumes:
+      # Без rslave: он требует, чтобы корень на хосте был shared или slave,
+      # а на виртуалке Docker Desktop это не так и контейнер не стартует.
+      # Плата — node-exporter не увидит точки монтирования, появившиеся
+      # после его запуска. Для одного сервера это несущественно.
+      - /:/host:ro
+      - metrics-textfile:/textfile:ro
+    pid: host
+    restart: unless-stopped
+
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.19.1
+    environment:
+      DATA_SOURCE_NAME: postgresql://tasker:${TASKER_DB_PASSWORD:?}@db:5432/tasker?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  prometheus-data:
+  grafana-data:
+  loki-data:
+  alloy-data:

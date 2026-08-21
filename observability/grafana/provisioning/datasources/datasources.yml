@@ -1,0 +1,22 @@
+# Источники данных заводятся из файла, а не руками в интерфейсе:
+# пересоздание контейнера не должно означать настройку заново.
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    jsonData:
+      timeInterval: 15s
+
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    jsonData:
+      # Связывает панель с логами: из графика метрики можно провалиться
+      # в логи того же контейнера за тот же период
+      derivedFields: []

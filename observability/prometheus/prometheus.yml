@@ -1,0 +1,39 @@
+# Что и как часто снимаем. Все цели живут во внутренней сети docker —
+# наружу ни одна из них не выставлена.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    instance: tasker
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  # Метрики самого приложения: частота запросов, ошибки, длительность.
+  # Это единственный источник, который говорит о сервисе, а не о железе.
+  - job_name: tasker-api
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["api:8000"]
+
+  # Потребление ресурсов контейнерами
+  - job_name: cadvisor
+    static_configs:
+      - targets: ["cadvisor:8080"]
+
+  # Хост: диск, память, нагрузка. Кончившийся диск — главная причина
+  # падения самостоятельно поднятых сервисов.
+  - job_name: node
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  # База: соединения, размер, долгие запросы
+  - job_name: postgres
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

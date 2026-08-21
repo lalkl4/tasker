@@ -1,0 +1,67 @@
+// Сбор логов контейнеров и отправка в Loki.
+//
+// Alloy — преемник Promtail, который Grafana объявила устаревшим.
+// Конфигурация описывает конвейер: откуда берём, как размечаем, куда шлём.
+
+// Находим контейнеры через docker api
+discovery.docker "containers" {
+	host             = "unix:///var/run/docker.sock"
+	refresh_interval = "15s"
+}
+
+// Превращаем служебные метки docker в человекочитаемые.
+// Без этого в Grafana будут длинные идентификаторы вместо имён сервисов.
+discovery.relabel "containers" {
+	targets = discovery.docker.containers.targets
+
+	rule {
+		source_labels = ["__meta_docker_container_name"]
+		regex         = "/(.*)"
+		target_label  = "container"
+	}
+
+	rule {
+		source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+		target_label  = "service"
+	}
+
+	rule {
+		source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+		target_label  = "project"
+	}
+}
+
+loki.source.docker "containers" {
+	host       = "unix:///var/run/docker.sock"
+	targets    = discovery.relabel.containers.output
+	forward_to = [loki.process.parse.receiver]
+}
+
+// Caddy пишет логи структурированным json — разбираем его,
+// чтобы по уровню и статусу можно было фильтровать
+loki.process "parse" {
+	stage.match {
+		selector = "{service=\"caddy\"}"
+
+		stage.json {
+			expressions = {
+				level  = "level",
+				status = "status",
+			}
+		}
+
+		stage.labels {
+			values = {
+				level = "",
+			}
+		}
+	}
+
+	forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+	endpoint {
+		url = "http://loki:3100/loki/api/v1/push"
+	}
+}

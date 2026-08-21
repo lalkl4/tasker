@@ -1,0 +1,85 @@
+# Правила намеренно немногочисленны. Алерт, на который не реагируют,
+# обучает игнорировать алерты — это хуже, чем его отсутствие.
+
+groups:
+  - name: tasker
+    rules:
+      - alert: ApiDown
+        expr: up{job="tasker-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Сервер Tasker не отвечает"
+          description: "Prometheus не может снять метрики с api уже 2 минуты."
+
+      - alert: DatabaseDown
+        expr: pg_up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL недоступен"
+
+      - alert: HighErrorRate
+        # Доля пятисотых больше 5% на протяжении пяти минут.
+        # Четырёхсотые сюда не входят: 401 и 404 — штатная работа API.
+        expr: |
+          sum(rate(http_requests_total{job="tasker-api",status=~"5.."}[5m]))
+            /
+          sum(rate(http_requests_total{job="tasker-api"}[5m]))
+            > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Больше 5% запросов завершаются ошибкой сервера"
+
+      - alert: SlowResponses
+        # 95-й процентиль дольше секунды. Считается по гистограмме
+        # в Prometheus, а не в приложении — так его можно складывать
+        # по нескольким репликам.
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(http_request_duration_seconds_bucket{job="tasker-api"}[5m])) by (le)
+          ) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "95-й процентиль ответа превысил секунду"
+
+      - alert: DiskFillingUp
+        expr: |
+          node_filesystem_avail_bytes{mountpoint="/"}
+            / node_filesystem_size_bytes{mountpoint="/"} < 0.15
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "На диске меньше 15% свободного места"
+          description: "Проверьте дампы в томе backups и логи docker."
+
+      - alert: NoRecentBackup
+        # Метрику пишет scripts/backup.sh в текстовый файл, который
+        # подбирает node-exporter. Восемь суток — потому что дамп снимается
+        # при каждом обновлении, а раз в неделю оно обычно бывает.
+        expr: |
+          time() - tasker_backup_last_success_timestamp_seconds > 8 * 24 * 3600
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Свежего дампа базы нет больше восьми суток"
+          description: "Снимите вручную: make backup"
+
+      - alert: BackupMetricMissing
+        # Отсутствие метрики означает, что дамп не снимался ни разу
+        # с момента запуска — это тоже повод посмотреть.
+        expr: absent(tasker_backup_last_success_timestamp_seconds)
+        for: 6h
+        labels:
+          severity: info
+        annotations:
+          summary: "Метрики бэкапа нет — дамп ни разу не снимался"

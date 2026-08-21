@@ -5,7 +5,7 @@ COMPOSE     := docker compose
 COMPOSE_DEV := docker compose -f compose.yaml -f compose.dev.yaml
 ENV_FILE    := .env
 
-.PHONY: help up down restart ps logs config version update rollback backup restore dev dev-down
+.PHONY: help up down restart ps logs config version update rollback backup restore dev dev-down obs-up obs-down obs-logs full-up
 
 help: ## Показать список команд
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -76,6 +76,23 @@ backup: ## Снять дамп базы прямо сейчас
 
 restore: ## Восстановить из дампа: make restore FILE=tasker-20260821-030000.sql.gz
 	$(COMPOSE) --profile tools run --rm $(if $(FILE),-e BACKUP_FILE=$(FILE),) restore
+
+# ---------- наблюдаемость ----------
+
+COMPOSE_OBS := docker compose -f compose.yaml -f compose.observability.yaml
+
+obs-up: ## Поднять стек вместе с мониторингом
+	$(COMPOSE_OBS) up -d --wait
+	@echo
+	@echo "Grafana и Prometheus слушают только 127.0.0.1. С удалённого сервера:"
+	@echo "  ssh -L 3000:localhost:3000 -L 9090:localhost:9090 user@server"
+	@echo "Дальше: http://localhost:3000 (дашборд «Tasker — обзор»)"
+
+obs-down: ## Погасить мониторинг вместе со стеком
+	$(COMPOSE_OBS) down
+
+obs-logs: ## Логи сервисов мониторинга
+	$(COMPOSE_OBS) logs -f --tail=100 prometheus grafana loki alloy
 
 # ---------- разработка ----------
 

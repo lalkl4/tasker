@@ -1,0 +1,15 @@
+apiVersion: 1
+
+providers:
+  - name: tasker
+    orgId: 1
+    folder: Tasker
+    type: file
+    disableDeletion: false
+    # Правки через интерфейс не переживут перезапуск: дашборд лежит
+    # в git, и это единственный источник правды
+    allowUiUpdates: false
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

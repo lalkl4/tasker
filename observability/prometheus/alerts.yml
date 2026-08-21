@@ -51,9 +51,11 @@ groups:
           summary: "95-й процентиль ответа превысил секунду"
 
       - alert: DiskFillingUp
+        # Минимум по всем настоящим файловым системам, а не только по корню:
+        # сервер может упереться в заполненный /var при свободном /.
+        # Псевдо-ФС исключены, иначе алерт будет срабатывать на tmpfs.
         expr: |
-          node_filesystem_avail_bytes{mountpoint="/"}
-            / node_filesystem_size_bytes{mountpoint="/"} < 0.15
+          min(node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs|ramfs|devtmpfs|fuse.*|selfowner|autofs|iso9660"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs|ramfs|devtmpfs|fuse.*|selfowner|autofs|iso9660"}) < 0.15
         for: 15m
         labels:
           severity: warning

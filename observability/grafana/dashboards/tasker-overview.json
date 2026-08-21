@@ -2,19 +2,27 @@
   "uid": "tasker-overview",
   "title": "Tasker — обзор",
   "description": "Состояние сервиса: частота запросов, ошибки, длительность, ресурсы и логи.",
-  "tags": ["tasker"],
+  "tags": [
+    "tasker"
+  ],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 1,
   "refresh": "30s",
-  "time": { "from": "now-6h", "to": "now" },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
   "templating": {
     "list": [
       {
         "name": "datasource",
         "type": "datasource",
         "query": "prometheus",
-        "current": { "text": "Prometheus", "value": "Prometheus" },
+        "current": {
+          "text": "Prometheus",
+          "value": "Prometheus"
+        },
         "hide": 2
       }
     ]
@@ -23,29 +31,76 @@
     {
       "type": "row",
       "title": "Сервис",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "collapsed": false
     },
     {
       "type": "stat",
       "title": "Доступность сервера",
-      "datasource": { "type": "prometheus", "uid": "$datasource" },
-      "gridPos": { "h": 4, "w": 5, "x": 0, "y": 1 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 5,
+        "x": 0,
+        "y": 1
+      },
       "targets": [
-        { "expr": "up{job=\"tasker-api\"}", "legendFormat": "api", "refId": "A" }
+        {
+          "expr": "up{job=\"tasker-api\"}",
+          "legendFormat": "api",
+          "refId": "A"
+        }
       ],
       "options": {
         "colorMode": "background",
         "graphMode": "none",
-        "reduceOptions": { "calcs": ["lastNotNull"] }
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       },
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            { "type": "value", "options": { "0": { "text": "не отвечает", "color": "red", "index": 0 } } },
-            { "type": "value", "options": { "1": { "text": "работает", "color": "green", "index": 1 } } }
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "не отвечает",
+                  "color": "red",
+                  "index": 0
+                }
+              }
+            },
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "работает",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
           ],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }] }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       }
@@ -53,8 +108,16 @@
     {
       "type": "stat",
       "title": "Запросов в секунду",
-      "datasource": { "type": "prometheus", "uid": "$datasource" },
-      "gridPos": { "h": 4, "w": 5, "x": 5, "y": 1 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 5,
+        "x": 5,
+        "y": 1
+      },
       "targets": [
         {
           "expr": "sum(rate(http_requests_total{job=\"tasker-api\"}[5m]))",
@@ -62,9 +125,23 @@
           "refId": "A"
         }
       ],
-      "options": { "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "options": {
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
       "fieldConfig": {
-        "defaults": { "unit": "reqps", "decimals": 2, "color": { "mode": "fixed", "fixedColor": "text" } },
+        "defaults": {
+          "unit": "reqps",
+          "decimals": 2,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          }
+        },
         "overrides": []
       }
     },
@@ -72,16 +149,32 @@
       "type": "stat",
       "title": "Доля ошибок сервера",
       "description": "Только 5xx. Четырёхсотые — штатная работа API: 401 без токена, 404 на чужой объект.",
-      "datasource": { "type": "prometheus", "uid": "$datasource" },
-      "gridPos": { "h": 4, "w": 5, "x": 10, "y": 1 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 5,
+        "x": 10,
+        "y": 1
+      },
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total{job=\"tasker-api\",status=~\"5..\"}[5m])) / clamp_min(sum(rate(http_requests_total{job=\"tasker-api\"}[5m])), 0.0001)",
+          "expr": "sum(rate(http_requests_total{job=\"tasker-api\",status=~\"5..\"}[5m]) or vector(0)) / clamp_min(sum(rate(http_requests_total{job=\"tasker-api\"}[5m])), 0.0001)",
           "legendFormat": "5xx",
           "refId": "A"
         }
       ],
-      "options": { "graphMode": "area", "colorMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "options": {
+        "graphMode": "area",
+        "colorMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "percentunit",
@@ -89,9 +182,18 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "orange", "value": 0.01 },
-              { "color": "red", "value": 0.05 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.01
+              },
+              {
+                "color": "red",
+                "value": 0.05
+              }
             ]
           }
         },
@@ -101,8 +203,16 @@
     {
       "type": "stat",
       "title": "95-й процентиль ответа",
-      "datasource": { "type": "prometheus", "uid": "$datasource" },
-      "gridPos": { "h": 4, "w": 5, "x": 15, "y": 1 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 5,
+        "x": 15,
+        "y": 1
+      },
       "targets": [
         {
           "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"tasker-api\"}[5m])) by (le))",
@@ -110,7 +220,15 @@
           "refId": "A"
         }
       ],
-      "options": { "graphMode": "area", "colorMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "options": {
+        "graphMode": "area",
+        "colorMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "s",
@@ -118,9 +236,18 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "orange", "value": 0.5 },
-              { "color": "red", "value": 1 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.5
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
             ]
           }
         },
@@ -131,8 +258,16 @@
       "type": "stat",
       "title": "Свежесть дампа",
       "description": "Пишется скриптом backup.sh через текстовый сборщик node-exporter.",
-      "datasource": { "type": "prometheus", "uid": "$datasource" },
-      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      },
       "targets": [
         {
           "expr": "time() - tasker_backup_last_success_timestamp_seconds",
@@ -140,16 +275,33 @@
           "refId": "A"
         }
       ],
-      "options": { "graphMode": "none", "colorMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "options": {
+        "graphMode": "none",
+        "colorMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "s",
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "orange", "value": 604800 },
-              { "color": "red", "value": 1209600 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 604800
+              },
+              {
+                "color": "red",
+                "value": 1209600
+              }
             ]
           },
           "noValue": "дампов не было"
@@ -160,14 +312,27 @@
     {
       "type": "row",
       "title": "Запросы",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
       "collapsed": false
     },
     {
       "type": "timeseries",
       "title": "Частота по эндпоинтам",
-      "datasource": { "type": "prometheus", "uid": "$datasource" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      },
       "targets": [
         {
           "expr": "sum by (handler) (rate(http_requests_total{job=\"tasker-api\"}[5m]))",
@@ -178,18 +343,39 @@
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
-          "custom": { "fillOpacity": 12, "lineWidth": 1, "showPoints": "never" }
+          "custom": {
+            "fillOpacity": 12,
+            "lineWidth": 1,
+            "showPoints": "never"
+          }
         },
         "overrides": []
       },
-      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] } }
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        }
+      }
     },
     {
       "type": "timeseries",
       "title": "Коды ответов",
       "description": "Коды не группируются в 2xx/4xx намеренно: разница между 401 и 404 бывает важна при разборе.",
-      "datasource": { "type": "prometheus", "uid": "$datasource" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      },
       "targets": [
         {
           "expr": "sum by (status) (rate(http_requests_total{job=\"tasker-api\"}[5m]))",
@@ -200,17 +386,37 @@
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
-          "custom": { "fillOpacity": 25, "lineWidth": 1, "showPoints": "never", "stacking": { "mode": "normal" } }
+          "custom": {
+            "fillOpacity": 25,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "normal"
+            }
+          }
         },
         "overrides": []
       },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
     },
     {
       "type": "timeseries",
       "title": "Длительность ответа",
-      "datasource": { "type": "prometheus", "uid": "$datasource" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 14
+      },
       "targets": [
         {
           "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{job=\"tasker-api\"}[5m])) by (le))",
@@ -231,17 +437,34 @@
       "fieldConfig": {
         "defaults": {
           "unit": "s",
-          "custom": { "fillOpacity": 0, "lineWidth": 2, "showPoints": "never" }
+          "custom": {
+            "fillOpacity": 0,
+            "lineWidth": 2,
+            "showPoints": "never"
+          }
         },
         "overrides": []
       },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
     },
     {
       "type": "timeseries",
       "title": "Соединения с базой",
-      "datasource": { "type": "prometheus", "uid": "$datasource" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 14
+      },
       "targets": [
         {
           "expr": "sum by (state) (pg_stat_activity_count{datname=\"tasker\"})",
@@ -250,22 +473,46 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "custom": { "fillOpacity": 20, "lineWidth": 1, "showPoints": "never" } },
+        "defaults": {
+          "custom": {
+            "fillOpacity": 20,
+            "lineWidth": 1,
+            "showPoints": "never"
+          }
+        },
         "overrides": []
       },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
     },
     {
       "type": "row",
       "title": "Ресурсы",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 22
+      },
       "collapsed": false
     },
     {
       "type": "timeseries",
       "title": "Процессор по контейнерам",
-      "datasource": { "type": "prometheus", "uid": "$datasource" },
-      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 23 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 23
+      },
       "targets": [
         {
           "expr": "sum by (name) (rate(container_cpu_usage_seconds_total{name=~\"tasker.+\"}[5m]))",
@@ -274,16 +521,36 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "percentunit", "custom": { "fillOpacity": 15, "lineWidth": 1, "showPoints": "never" } },
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "fillOpacity": 15,
+            "lineWidth": 1,
+            "showPoints": "never"
+          }
+        },
         "overrides": []
       },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
     },
     {
       "type": "timeseries",
       "title": "Память по контейнерам",
-      "datasource": { "type": "prometheus", "uid": "$datasource" },
-      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 23 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 23
+      },
       "targets": [
         {
           "expr": "sum by (name) (container_memory_working_set_bytes{name=~\"tasker.+\"})",
@@ -292,25 +559,52 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "bytes", "custom": { "fillOpacity": 15, "lineWidth": 1, "showPoints": "never" } },
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "fillOpacity": 15,
+            "lineWidth": 1,
+            "showPoints": "never"
+          }
+        },
         "overrides": []
       },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
     },
     {
       "type": "gauge",
       "title": "Свободно на диске",
-      "description": "Кончившийся диск — главная причина падения самостоятельно поднятых сервисов.",
-      "datasource": { "type": "prometheus", "uid": "$datasource" },
-      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 23 },
+      "description": "Минимум по всем настоящим файловым системам: сервер может упереться в заполненный /var при свободном корне.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 23
+      },
       "targets": [
         {
-          "expr": "node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"}",
+          "expr": "min(node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay|squashfs|ramfs|devtmpfs|fuse.*|selfowner|autofs|iso9660\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay|squashfs|ramfs|devtmpfs|fuse.*|selfowner|autofs|iso9660\"})",
           "legendFormat": "корень",
           "refId": "A"
         }
       ],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdLabels": false },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "showThresholdLabels": false
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "percentunit",
@@ -319,9 +613,18 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "orange", "value": 0.15 },
-              { "color": "green", "value": 0.3 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.15
+              },
+              {
+                "color": "green",
+                "value": 0.3
+              }
             ]
           }
         },
@@ -331,14 +634,27 @@
     {
       "type": "row",
       "title": "Логи",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 30 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
       "collapsed": false
     },
     {
       "type": "logs",
       "title": "Логи сервисов",
-      "datasource": { "type": "loki", "uid": "loki" },
-      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 31 },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 31
+      },
       "targets": [
         {
           "expr": "{project=\"tasker\"}",
